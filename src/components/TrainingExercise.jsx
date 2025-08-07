@@ -177,7 +177,7 @@ const OperationsDashboard = () => {
 					icon={CheckCircle}
 				/>
 				<StatCard
-					title="Pending Jobs"
+					title="Pending Job"
 					value={jobs.filter((j) => j.status === "Pending").length}
 					icon={ClipboardList}
 				/>
@@ -544,3 +544,4 @@ const App = () => {
 };
 
 export default App;
+

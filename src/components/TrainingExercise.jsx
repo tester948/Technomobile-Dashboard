@@ -8,6 +8,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from "recharts";
 import {
   LayoutDashboard,
@@ -518,4 +521,5 @@ const App = () => {
 };
 
 export default App;
+
 

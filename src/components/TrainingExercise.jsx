@@ -1,72 +1,78 @@
 import React, { useState } from "react";
+import { Card, CardContent, Typography, Grid, MenuItem, Select } from "@mui/material";
 
 export default function TrainingExercise() {
-  // ---------------------- FIELD TECHNICIAN ----------------------
+  // ============================
+  // FIELD TECHNICIAN STATE
+  // ============================
   const [currentJobStatus, setCurrentJobStatus] = useState("En route");
-  const [jobCompletionRate, setJobCompletionRate] = useState(85);
-  const [customerSatisfaction, setCustomerSatisfaction] = useState(90);
-  const [urgentJobs, setUrgentJobs] = useState(3); // New KPI
+  const [jobCompletionRate, setJobCompletionRate] = useState(85); // %
+  const [customerSatisfaction, setCustomerSatisfaction] = useState(90); // %
+  const [emergencyCalls, setEmergencyCalls] = useState(2); // New KPI
 
   const handleJobStatusChange = (status) => {
     setCurrentJobStatus(status);
 
     if (status === "Complete") {
-      setJobCompletionRate((prev) => prev + 1); // Auto increase by 1%
-      setCustomerSatisfaction((prev) => prev + 1); // Auto increase by 1%
-      setUrgentJobs((prev) => prev - 1); // Auto decrease urgent jobs
+      setJobCompletionRate((prev) => prev + 1); // fixed increment
+      setCustomerSatisfaction((prev) => prev + 2); // fixed increment
     }
   };
 
-  // ---------------------- RETAIL ASSOCIATE ----------------------
-  const [productInventory, setProductInventory] = useState(100);
-  const [dailySales, setDailySales] = useState(0);
-  const [customerFeedback, setCustomerFeedback] = useState(15);
+  // ============================
+  // RETAIL ASSOCIATE STATE
+  // ============================
+  const categories = ["Electronics", "Accessories", "Repairs", "Others"];
+  const [dailySales, setDailySales] = useState(500);
+  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
   const [monthlySalesByCategory, setMonthlySalesByCategory] = useState({
-    Electronics: 5000,
-    Clothing: 3000,
+    Electronics: 2000,
     Accessories: 1500,
-    Home: 2000,
+    Repairs: 800,
+    Others: 600,
   });
-  const [selectedCategory, setSelectedCategory] = useState("Electronics");
+  const [customerFeedbackCount, setCustomerFeedbackCount] = useState(10);
+  const [productInventory, setProductInventory] = useState({
+    "Product A": 50,
+  });
 
-  const handleDailySalesUpdate = (value) => {
-    const numericValue = parseFloat(value) || 0;
+  const handleDailySalesChange = (value, category) => {
+    const numericValue = Number(value);
     setDailySales(numericValue);
 
     setMonthlySalesByCategory((prev) => ({
       ...prev,
-      [selectedCategory]: prev[selectedCategory] + numericValue,
+      [category]: prev[category] + numericValue,
     }));
 
-    setCustomerFeedback((prev) => prev + 1); // Auto increase with each sale
+    setCustomerFeedbackCount((prev) => prev + 1);
   };
 
-  // ---------------------- OPERATIONS ----------------------
+  // ============================
+  // OPERATIONS STATE
+  // ============================
   const [jobs, setJobs] = useState({
     "J-102": "Pending",
   });
-  const [pendingJobs, setPendingJobs] = useState(10);
+  const [pendingJobs, setPendingJobs] = useState(5);
   const [lowStockItems, setLowStockItems] = useState({
-    "Network Cable (10ft)": 20,
-    "Router": 15,
-    "Modem": 10,
-    "Fiber Cable": 25,
-    "Switch": 12,
+    "Network Cable (10ft)": 10,
+    "Router": 5,
+    "Fiber Splice Kit": 7,
+    "Modem": 4,
+    "Wi-Fi Extender": 6,
   });
   const [inStockItems, setInStockItems] = useState(
     Object.values(lowStockItems).reduce((a, b) => a + b, 0)
   );
-  const [dailyTaskCompletion, setDailyTaskCompletion] = useState(5);
+  const [dailyTaskCompletion, setDailyTaskCompletion] = useState(8);
 
-  const handleJobUpdate = (jobId, status) => {
-    setJobs((prev) => ({
-      ...prev,
-      [jobId]: status,
-    }));
+  const handleJobStatusUpdate = (jobId, status) => {
+    setJobs((prev) => ({ ...prev, [jobId]: status }));
 
     if (status === "Complete") {
-      setPendingJobs((prev) => prev - 1); // Auto decrease pending jobs
-      setDailyTaskCompletion((prev) => prev + 1); // Auto increase completed tasks
+      setPendingJobs((prev) => prev - 1);
+      setDailyTaskCompletion((prev) => prev + 1);
     }
   };
 
@@ -78,107 +84,117 @@ export default function TrainingExercise() {
     });
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h1>Training Dashboard</h1>
-
-      {/* FIELD TECHNICIAN */}
-      <section>
-        <h2>Field Technician</h2>
-        <p>
-          Current Job Status:
-          <select
-            value={currentJobStatus}
-            onChange={(e) => handleJobStatusChange(e.target.value)}
-          >
-            <option>En route</option>
-            <option>In Progress</option>
-            <option>Complete</option>
-          </select>
-        </p>
-        <p>Job Completion Rate: {jobCompletionRate}%</p>
-        <p>Customer Satisfaction: {customerSatisfaction}%</p>
-        <p>
-          Urgent Jobs:{" "}
-          <input
-            type="number"
-            value={urgentJobs}
-            onChange={(e) => setUrgentJobs(parseInt(e.target.value) || 0)}
-          />
-        </p>
-      </section>
-
-      {/* RETAIL ASSOCIATE */}
-      <section>
-        <h2>Retail Associate</h2>
-        <p>
-          Product Inventory:{" "}
-          <input
-            type="number"
-            value={productInventory}
-            onChange={(e) => setProductInventory(parseInt(e.target.value) || 0)}
-          />
-        </p>
-        <p>
-          Daily Sales:{" "}
-          <input
-            type="number"
-            value={dailySales}
-            onChange={(e) => handleDailySalesUpdate(e.target.value)}
-          />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {Object.keys(monthlySalesByCategory).map((cat) => (
-              <option key={cat}>{cat}</option>
+  // ============================
+  // CARD RENDER HELPER
+  // ============================
+  const renderCard = (title, value, onChange, type = "text", extra = null) => (
+    <Card sx={{ backgroundColor: "#f5f5f5" }}>
+      <CardContent>
+        <Typography variant="h6">{title}</Typography>
+        {type === "select" ? (
+          <Select value={value} onChange={(e) => onChange(e.target.value)} fullWidth>
+            {extra.map((opt) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
             ))}
-          </select>
-        </p>
-        <p>Customer Feedback: {customerFeedback}</p>
-        <h4>Monthly Sales by Category:</h4>
-        <ul>
-          {Object.entries(monthlySalesByCategory).map(([cat, value]) => (
-            <li key={cat}>
-              {cat}: ${value}
-            </li>
-          ))}
-        </ul>
-      </section>
+          </Select>
+        ) : (
+          <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{ width: "100%", padding: "6px", fontSize: "16px" }}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
 
-      {/* OPERATIONS */}
-      <section>
-        <h2>Operations</h2>
-        <p>
-          Job J-102 Status:{" "}
-          <select
-            value={jobs["J-102"]}
-            onChange={(e) => handleJobUpdate("J-102", e.target.value)}
-          >
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Complete</option>
-          </select>
-        </p>
-        <p>Pending Jobs: {pendingJobs}</p>
-        <p>Daily Task Completion: {dailyTaskCompletion}</p>
-        <h4>Inventory Stock:</h4>
-        <ul>
-          {Object.entries(lowStockItems).map(([item, qty]) => (
-            <li key={item}>
-              {item}:{" "}
-              <input
-                type="number"
-                value={qty}
-                onChange={(e) =>
-                  handleStockChange(item, parseInt(e.target.value) || 0)
-                }
-              />
-            </li>
-          ))}
-        </ul>
-        <p>In-Stock Items: {inStockItems}</p>
-      </section>
-    </div>
+  return (
+    <Grid container spacing={3}>
+      {/* ================== FIELD TECHNICIAN ================== */}
+      <Grid item xs={12}>
+        <Typography variant="h5">Field Technician</Typography>
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Current Job Status", currentJobStatus, handleJobStatusChange, "select", [
+          "En route",
+          "In Progress",
+          "Complete",
+        ])}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Job Completion Rate (%)", jobCompletionRate, setJobCompletionRate, "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Customer Satisfaction (%)", customerSatisfaction, setCustomerSatisfaction, "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Emergency Calls", emergencyCalls, setEmergencyCalls, "number")}
+      </Grid>
+
+      {/* ================== RETAIL ASSOCIATE ================== */}
+      <Grid item xs={12}>
+        <Typography variant="h5">Retail Associate</Typography>
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Product A Inventory", productInventory["Product A"], (val) =>
+          setProductInventory((prev) => ({ ...prev, "Product A": Number(val) }))
+        , "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Daily Sales", dailySales, (val) => handleDailySalesChange(val, selectedCategory), "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Category", selectedCategory, setSelectedCategory, "select", categories)}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Customer Feedback Count", customerFeedbackCount, setCustomerFeedbackCount, "number")}
+      </Grid>
+      <Grid item xs={12}>
+        <Typography variant="body1">Monthly Sales by Category:</Typography>
+        {categories.map((cat) => (
+          <Typography key={cat}>
+            {cat}: ${monthlySalesByCategory[cat]}
+          </Typography>
+        ))}
+      </Grid>
+
+      {/* ================== OPERATIONS ================== */}
+      <Grid item xs={12}>
+        <Typography variant="h5">Operations</Typography>
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Job J-102 Status", jobs["J-102"], (val) => handleJobStatusUpdate("J-102", val), "select", [
+          "Pending",
+          "In Progress",
+          "Complete",
+        ])}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Pending Jobs", pendingJobs, setPendingJobs, "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("Daily Task Completion", dailyTaskCompletion, setDailyTaskCompletion, "number")}
+      </Grid>
+      <Grid item xs={3}>
+        {renderCard("In-Stock Items", inStockItems, setInStockItems, "number")}
+      </Grid>
+      <Grid item xs={12}>
+        <Typography variant="body1">Inventory:</Typography>
+        {Object.keys(lowStockItems).map((item) => (
+          <div key={item}>
+            {item}:{" "}
+            <input
+              type="number"
+              value={lowStockItems[item]}
+              onChange={(e) => handleStockChange(item, Number(e.target.value))}
+              style={{ width: "80px" }}
+            />
+          </div>
+        ))}
+      </Grid>
+    </Grid>
   );
 }

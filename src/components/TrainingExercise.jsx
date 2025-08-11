@@ -124,6 +124,7 @@ const ChartCard = ({ title, children }) => (
 const OperationsDashboard = () => {
   const [data, setData] = useState(operationsDataInit);
 
+  // Update job status — adjusts pendingJobs and dailyTaskCompletion automatically
   const updateJobStatus = (jobId, newStatus) => {
     const job = data.activeJobs.find((j) => j.id === jobId);
     const prevStatus = job ? job.status : null;
@@ -133,8 +134,10 @@ const OperationsDashboard = () => {
     let newPending = data.pendingJobs;
     let newCompletion = data.dailyTaskCompletion;
 
+    // If marking to Complete and it wasn't Complete before -> adjust KPIs
     if (newStatus === "Complete" && prevStatus !== "Complete") {
-      if (newPending > 0) newPending -= 1;
+      if (newPending > 0) newPending = newPending - 1;
+      // increment completion by 1 percentage point (cap at 100)
       newCompletion = Math.min(Math.round(newCompletion) + 1, 100);
     }
 
@@ -153,7 +156,7 @@ const OperationsDashboard = () => {
       <h1 className="text-3xl font-bold text-gray-900">Operations Dashboard</h1>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Daily Task Completion" value={`${data.dailyTaskCompletion}%`} icon={CheckCircle} />
+        <StatCard title="Daily Task Completion" value={${data.dailyTaskCompletion}%} icon={CheckCircle} />
         <StatCard title="Pending Jobs" value={data.pendingJobs} icon={ClipboardList} />
         <StatCard title="In-Stock Items" value={totalStock} icon={Package} />
         <StatCard title="Out of Stock Items" value={data.inventory.filter((i) => i.quantity === 0).length} icon={Truck} />
@@ -191,6 +194,35 @@ const OperationsDashboard = () => {
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-md">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Active Jobs</h3>
+        <ul className="divide-y divide-gray-200">
+          {data.activeJobs.map((job) => (
+            <li key={job.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+              <div className="mb-2 sm:mb-0">
+                <p className="font-medium text-gray-900">{job.id}</p>
+                <p className="text-sm text-gray-500">{job.location}</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <label htmlFor={status-select-${job.id}} className="sr-only">
+                  Choose a status
+                </label>
+                <select
+                  id={status-select-${job.id}}
+                  value={job.status}
+                  onChange={(e) => updateJobStatus(job.id, e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Complete">Complete</option>
+                </select>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -373,3 +405,4 @@ const App = () => {
 };
 
 export default App;
+

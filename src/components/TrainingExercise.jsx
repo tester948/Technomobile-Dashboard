@@ -295,40 +295,86 @@ const FieldTechnicianDashboard = () => {
    Retail Associate Dashboard
 ------------------------- */
 const RetailAssociateDashboard = () => {
-  const [data, setData] = useState(retailDataInit);
+  const [data, setData] = useState({
+    storeName: "Central Store",
+    dailySales: 2500,
+    selectedCategory: "Electronics",
+    dailySalesLast5Days: [
+      { name: "Mon", sales: 2200 },
+      { name: "Tue", sales: 2400 },
+      { name: "Wed", sales: 2600 },
+      { name: "Thu", sales: 2000 },
+      { name: "Fri", sales: 2500 },
+    ],
+    productInventory: [
+      { name: "Product A", value: 200, color: "#3b82f6" },
+      { name: "Product B", value: 150, color: "#f97316" },
+      { name: "Product C", value: 50, color: "#ef4444" },
+    ],
+    customerFeedbackCount: 4,
+    monthlySalesByCategory: [
+      { category: "Electronics", sales: 12000 },
+      { category: "Accessories", sales: 7500 },
+      { category: "Apparel", sales: 5000 },
+      { category: "Home Goods", sales: 3000 },
+    ],
+  });
 
-  const updateDailySales = (val) => {
-    const prev = Number(data.dailySales || 0);
-    const delta = Number(val) - prev;
+  // Update daily sales and linked KPIs
+  const updateDailySales = (newVal, category) => {
+    const prevVal = Number(data.dailySales || 0);
+    const delta = Number(newVal) - prevVal;
 
+    // Update monthly sales for the chosen category
     const updatedCategories = data.monthlySalesByCategory.map((c) =>
-      c.category === data.selectedCategory ? { ...c, sales: c.sales + delta } : c
+      c.category === category ? { ...c, sales: c.sales + delta } : c
     );
+
+    // Update last 5 days sales (replace last day)
+    const updatedDaily5Days = [...data.dailySalesLast5Days];
+    updatedDaily5Days[updatedDaily5Days.length - 1] = {
+      ...updatedDaily5Days[updatedDaily5Days.length - 1],
+      sales: Number(newVal),
+    };
 
     setData({
       ...data,
-      dailySales: Number(val),
+      dailySales: Number(newVal),
+      selectedCategory: category,
       monthlySalesByCategory: updatedCategories,
-      customerFeedbackCount: data.customerFeedbackCount + 1,
+      dailySalesLast5Days: updatedDaily5Days,
     });
+  };
+
+  // Update product inventory value
+  const updateInventoryValue = (productName, newValue) => {
+    const updatedInventory = data.productInventory.map((p) =>
+      p.name === productName ? { ...p, value: Number(newValue) } : p
+    );
+    setData({ ...data, productInventory: updatedInventory });
   };
 
   return (
     <div className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Store Dashboard - {data.storeName}</h1>
+      <h1 className="text-3xl font-bold text-gray-900">
+        Store Dashboard - {data.storeName}
+      </h1>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Editable Daily Sales with Category dropdown */}
         <div className="bg-white p-6 rounded-xl shadow-md">
           <p className="text-gray-500 text-sm">Daily Sales (Today)</p>
           <input
             type="number"
             value={data.dailySales}
-            onChange={(e) => updateDailySales(Number(e.target.value))}
+            onChange={(e) =>
+              updateDailySales(e.target.value, data.selectedCategory)
+            }
             className="border rounded px-2 mb-2 w-full"
           />
           <select
             value={data.selectedCategory}
-            onChange={(e) => setData({ ...data, selectedCategory: e.target.value })}
+            onChange={(e) => updateDailySales(data.dailySales, e.target.value)}
             className="border rounded px-2 w-full"
           >
             {data.monthlySalesByCategory.map((c) => (
@@ -340,11 +386,90 @@ const RetailAssociateDashboard = () => {
         </div>
 
         <StatCard title="Upcoming Tasks" value="3" icon={ClipboardList} />
-        <StatCard title="Customer Feedback" value={`${data.customerFeedbackCount} new`} icon={MessageCircle} />
+        <StatCard
+          title="Customer Feedback"
+          value={`${data.customerFeedbackCount} new`}
+          icon={MessageCircle}
+        />
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <ChartCard title="Daily Sales (Last 5 Days)">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.dailySalesLast5Days}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="sales" fill="#10b981" name="Sales ($)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Monthly Sales by Category (Last 30 Days)">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              layout="vertical"
+              data={data.monthlySalesByCategory}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="category" type="category" />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="sales" fill="#8884d8" name="Sales ($)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* Product Inventory Distribution Editable */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <ChartCard title="Product Inventory Distribution">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={data.productInventory}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                fill="#8884d8"
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {data.productInventory.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+          <ul className="mt-4 divide-y divide-gray-200">
+            {data.productInventory.map((p) => (
+              <li
+                key={p.name}
+                className="py-2 flex justify-between items-center"
+              >
+                <span className="font-medium text-gray-900">{p.name}</span>
+                <input
+                  type="number"
+                  value={p.value}
+                  onChange={(e) => updateInventoryValue(p.name, e.target.value)}
+                  className="border rounded px-2 w-20"
+                />
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
       </div>
     </div>
   );
 };
+
 
 /* -------------------------
    App Root
@@ -393,3 +518,4 @@ const App = () => {
 };
 
 export default App;
+

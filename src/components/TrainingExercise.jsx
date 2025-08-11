@@ -260,7 +260,7 @@ const FieldTechnicianDashboard = () => {
         if (newStatus === "Complete") {
             setJobsInQueue(prev => Math.max(prev - 1, 0)); // reduce jobs in queue
             setCompletionRate(prev => Math.min(prev + 20, 100)); // increase rate, max 100%
-            setCustomerSatisfaction(prev => Math.min((prev + 0.1).toFixed(1), 5)); // small boost to satisfaction
+            setCustomerSatisfaction(prev => Math.min((parseFloat(prev) + 0.1).toFixed(1), 5)); // small boost
         }
 
         // Show toast confirmation
@@ -284,7 +284,7 @@ const FieldTechnicianDashboard = () => {
                 <StatCard
                     title="Customer Satisfaction"
                     value={`${customerSatisfaction}/5`}
-                    icon={HeartHandshake}
+                    icon={Smile} // replaced HeartHandshake with Smile
                 />
                 <StatCard
                     title="Average Job Time"
@@ -528,5 +528,6 @@ const App = () => {
 };
 
 export default App;
+
 
 

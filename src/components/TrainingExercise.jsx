@@ -297,6 +297,9 @@ const FieldTechnicianDashboard = () => {
 /* -------------------------
    Retail Associate Dashboard
 ------------------------- */
+/* -------------------------
+   Retail Associate Dashboard
+------------------------- */
 const RetailAssociateDashboard = () => {
   const [data, setData] = useState({
     storeName: "Central Store",
@@ -328,12 +331,10 @@ const RetailAssociateDashboard = () => {
     const prevVal = Number(data.dailySales || 0);
     const delta = Number(newVal) - prevVal;
 
-    // Update monthly sales for the chosen category
     const updatedCategories = data.monthlySalesByCategory.map((c) =>
       c.category === category ? { ...c, sales: c.sales + delta } : c
     );
 
-    // Update last 5 days sales (replace last day)
     const updatedDaily5Days = [...data.dailySalesLast5Days];
     updatedDaily5Days[updatedDaily5Days.length - 1] = {
       ...updatedDaily5Days[updatedDaily5Days.length - 1],
@@ -349,13 +350,16 @@ const RetailAssociateDashboard = () => {
     });
   };
 
-  // Update product inventory value
+  // Update product inventory and auto-update out-of-stock count
   const updateInventoryValue = (productName, newValue) => {
     const updatedInventory = data.productInventory.map((p) =>
       p.name === productName ? { ...p, value: Number(newValue) } : p
     );
     setData({ ...data, productInventory: updatedInventory });
   };
+
+  // Derived KPI: number of out-of-stock items
+  const outOfStockCount = data.productInventory.filter((p) => p.value === 0).length;
 
   return (
     <div className="p-8 space-y-8">
@@ -364,7 +368,6 @@ const RetailAssociateDashboard = () => {
       </h1>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Editable Daily Sales with Category dropdown */}
         <div className="bg-white p-6 rounded-xl shadow-md">
           <p className="text-gray-500 text-sm">Daily Sales (Today)</p>
           <input
@@ -388,7 +391,9 @@ const RetailAssociateDashboard = () => {
           </select>
         </div>
 
-        <StatCard title="Upcoming Tasks" value="3" icon={ClipboardList} />
+        {/* UPDATED KPI */}
+        <StatCard title="Out of Stock Items" value={outOfStockCount} icon={ClipboardList} />
+
         <StatCard
           title="Customer Feedback"
           value={`${data.customerFeedbackCount} new`}
@@ -413,10 +418,7 @@ const RetailAssociateDashboard = () => {
 
         <ChartCard title="Monthly Sales by Category (Last 30 Days)">
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              layout="vertical"
-              data={data.monthlySalesByCategory}
-            >
+            <BarChart layout="vertical" data={data.monthlySalesByCategory}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
               <YAxis dataKey="category" type="category" />
@@ -453,10 +455,7 @@ const RetailAssociateDashboard = () => {
           </ResponsiveContainer>
           <ul className="mt-4 divide-y divide-gray-200">
             {data.productInventory.map((p) => (
-              <li
-                key={p.name}
-                className="py-2 flex justify-between items-center"
-              >
+              <li key={p.name} className="py-2 flex justify-between items-center">
                 <span className="font-medium text-gray-900">{p.name}</span>
                 <input
                   type="number"
@@ -521,5 +520,6 @@ const App = () => {
 };
 
 export default App;
+
 
 

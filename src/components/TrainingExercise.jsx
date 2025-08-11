@@ -20,7 +20,7 @@ import {
   CheckCircle,
   Package,
   Handshake,
-  HeartHandshake,
+  Smile,
   ClipboardList,
   TrendingUp,
   MapPin,
@@ -528,6 +528,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 

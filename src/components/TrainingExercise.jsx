@@ -370,7 +370,6 @@ const RetailAssociateDashboard = () => {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-md">
           <p className="text-gray-500 text-sm">Daily Sales (Today)</p>
-          icon={TrendingUp}
           <input
             type="number"
             value={data.dailySales}
@@ -521,6 +520,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 

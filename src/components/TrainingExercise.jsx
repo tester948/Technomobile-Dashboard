@@ -8,9 +8,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import {
   LayoutDashboard,
@@ -19,8 +16,6 @@ import {
   Calendar,
   CheckCircle,
   Package,
-  Handshake,
-  Smile,
   ClipboardList,
   TrendingUp,
   MapPin,
@@ -29,16 +24,16 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Define the available dashboards and their corresponding icons
+// Dashboards
 const dashboards = [
   { id: "operations", name: "Operations", icon: LayoutDashboard },
   { id: "field", name: "Field Technician", icon: Wrench },
   { id: "retail", name: "Retail Associate", icon: Store },
 ];
 
-// Initial/mock data
+// Initial Data
 const operationsDataInit = {
-  dailyTaskCompletion: 85, // percent
+  dailyTaskCompletion: 85,
   pendingJobs: 12,
   inventory: [
     { name: "Spare Part X", quantity: 3 },
@@ -78,10 +73,10 @@ const technicianDataInit = {
     { time: "02:00 PM", task: "Follow up with customer from Job J-098" },
   ],
   performanceMetrics: {
-    completionRate: 20, // start at 20% (will increase +20% per completed job up to 100)
+    completionRate: 20,
     averageTime: "45 min",
     customerSatisfaction: 4.8,
-    jobsInQueue: 4, // Jobs in Queue (Today) — non-editable start value
+    jobsInQueue: 4,
   },
 };
 
@@ -103,24 +98,15 @@ const retailDataInit = {
   ],
 };
 
-// Re-usable stat card (keeps your original look)
-const StatCard = ({ title, value, icon: Icon, editable, onChange }) => (
+// Reusable UI Components
+const StatCard = ({ title, value, icon: Icon }) => (
   <div className="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
     <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
       <Icon className="w-6 h-6" />
     </div>
     <div>
       <p className="text-gray-500 text-sm font-medium">{title}</p>
-      {editable ? (
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="text-2xl font-bold text-gray-800 border rounded px-1 w-24"
-        />
-      ) : (
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
-      )}
+      <p className="text-2xl font-bold text-gray-800">{value}</p>
     </div>
   </div>
 );
@@ -134,24 +120,20 @@ const ChartCard = ({ title, children }) => (
 
 /* -------------------------
    Operations Dashboard
-   ------------------------- */
+------------------------- */
 const OperationsDashboard = () => {
   const [data, setData] = useState(operationsDataInit);
 
-  // Update job status — adjusts pendingJobs and dailyTaskCompletion automatically
   const updateJobStatus = (jobId, newStatus) => {
     const job = data.activeJobs.find((j) => j.id === jobId);
     const prevStatus = job ? job.status : null;
-
     const updatedJobs = data.activeJobs.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j));
 
     let newPending = data.pendingJobs;
     let newCompletion = data.dailyTaskCompletion;
 
-    // If marking to Complete and it wasn't Complete before -> adjust KPIs
     if (newStatus === "Complete" && prevStatus !== "Complete") {
-      if (newPending > 0) newPending = newPending - 1;
-      // increment completion by 1 percentage point (cap at 100)
+      if (newPending > 0) newPending -= 1;
       newCompletion = Math.min(Math.round(newCompletion) + 1, 100);
     }
 
@@ -219,21 +201,15 @@ const OperationsDashboard = () => {
                 <p className="font-medium text-gray-900">{job.id}</p>
                 <p className="text-sm text-gray-500">{job.location}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <label htmlFor={`status-select-${job.id}`} className="sr-only">
-                  Choose a status
-                </label>
-                <select
-                  id={`status-select-${job.id}`}
-                  value={job.status}
-                  onChange={(e) => updateJobStatus(job.id, e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Complete">Complete</option>
-                </select>
-              </div>
+              <select
+                value={job.status}
+                onChange={(e) => updateJobStatus(job.id, e.target.value)}
+                className="border rounded px-2 py-1"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Complete">Complete</option>
+              </select>
             </li>
           ))}
         </ul>
@@ -244,157 +220,83 @@ const OperationsDashboard = () => {
 
 /* -------------------------
    Field Technician Dashboard
-   ------------------------- */
+------------------------- */
 const FieldTechnicianDashboard = () => {
-    const [currentJob, setCurrentJob] = useState(technicianData.currentJob);
-    const [newStatus, setNewStatus] = useState(currentJob.status);
-    const [completionRate, setCompletionRate] = useState(technicianData.performanceMetrics.completionRate);
-    const [jobsInQueue, setJobsInQueue] = useState(4); // initial value for today’s jobs
-    const [customerSatisfaction, setCustomerSatisfaction] = useState(technicianData.performanceMetrics.customerSatisfaction);
-    const [showToast, setShowToast] = useState(false);
+  const [data, setData] = useState(technicianDataInit);
+  const [toast, setToast] = useState("");
 
-    const handleStatusUpdate = () => {
-        setCurrentJob({ ...currentJob, status: newStatus });
+  const updateStatus = () => {
+    const prevStatus = data.currentJob.status;
+    const newStatus = document.getElementById("status-select").value;
 
-        // If job is marked complete, update KPIs
-        if (newStatus === "Complete") {
-            setJobsInQueue(prev => Math.max(prev - 1, 0)); // reduce jobs in queue
-            setCompletionRate(prev => Math.min(prev + 20, 100)); // increase rate, max 100%
-            setCustomerSatisfaction(prev => Math.min((parseFloat(prev) + 0.1).toFixed(1), 5)); // small boost
-        }
+    let { completionRate, jobsInQueue, customerSatisfaction } = data.performanceMetrics;
 
-        // Show toast confirmation
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2000);
-    };
+    if (newStatus === "Complete" && prevStatus !== "Complete") {
+      jobsInQueue = Math.max(0, jobsInQueue - 1);
+      completionRate = Math.min(100, completionRate + 20);
+      customerSatisfaction = Math.min(5, Number((customerSatisfaction + 0.1).toFixed(1)));
+      setToast("✅ Job marked complete! KPIs updated.");
+      setTimeout(() => setToast(""), 2000);
+    }
 
-    return (
-        <div className="p-8 space-y-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-                Hello, {technicianData.name}!
-            </h1>
+    setData({
+      ...data,
+      currentJob: { ...data.currentJob, status: newStatus },
+      performanceMetrics: { ...data.performanceMetrics, completionRate, jobsInQueue, customerSatisfaction },
+    });
+  };
 
-            {/* KPI Cards */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <StatCard
-                    title="Current Job Status"
-                    value={currentJob.status}
-                    icon={Wrench}
-                />
-                <StatCard
-                    title="Customer Satisfaction"
-                    value={`${customerSatisfaction}/5`}
-                    icon={Smile} // replaced HeartHandshake with Smile
-                />
-                <StatCard
-                    title="Average Job Time"
-                    value={technicianData.performanceMetrics.averageTime}
-                    icon={Calendar}
-                />
-                <StatCard
-                    title="Job Completion Rate"
-                    value={`${completionRate}%`}
-                    icon={CheckCircle}
-                />
-                <StatCard
-                    title="Jobs in Queue (Today)"
-                    value={jobsInQueue}
-                    icon={ClipboardList}
-                />
-            </div>
+  return (
+    <div className="p-8 space-y-8">
+      {toast && <div className="bg-green-100 text-green-800 p-2 rounded">{toast}</div>}
+      <h1 className="text-3xl font-bold text-gray-900">Hello, {data.name}!</h1>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-                {/* Current Job Info */}
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <MapPin className="mr-2 h-5 w-5 text-blue-500" /> Current Job
-                    </h3>
-                    <p className="text-gray-900 font-medium text-xl">
-                        {currentJob.customer}
-                    </p>
-                    <p className="text-gray-600 mb-2">{currentJob.address}</p>
-                    <p className="text-gray-500 text-sm mb-4">
-                        {currentJob.description}
-                    </p>
-                    <div className="flex items-center space-x-2 text-sm text-gray-700">
-                        <span className="font-semibold">ETA:</span>
-                        <span>{currentJob.eta}</span>
-                    </div>
-                </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard title="Current Job Status" value={data.currentJob.status} icon={Wrench} />
+        <StatCard title="Customer Satisfaction" value={`${data.performanceMetrics.customerSatisfaction}/5`} icon={TrendingUp} />
+        <StatCard title="Job Completion Rate" value={`${data.performanceMetrics.completionRate}%`} icon={CheckCircle} />
+        <StatCard title="Jobs in Queue (Today)" value={data.performanceMetrics.jobsInQueue} icon={ClipboardList} />
+      </div>
 
-                {/* Update Job Status */}
-                <div className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> Update Job Status
-                        </h3>
-                        <p className="text-gray-500 text-sm mb-4">
-                            Update the status for Job ID: {currentJob.id}
-                        </p>
-                        <div className="flex items-center space-x-4">
-                            <label htmlFor="status-select" className="sr-only">
-                                Choose a status
-                            </label>
-                            <select
-                                id="status-select"
-                                value={newStatus}
-                                onChange={(e) => setNewStatus(e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
-                            >
-                                <option value="En route">En route</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="On hold">On hold</option>
-                                <option value="Complete">Complete</option>
-                            </select>
-                            <button
-                                onClick={handleStatusUpdate}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                            >
-                                Update
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* My Schedule */}
-            <div className="grid lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> My Schedule
-                    </h3>
-                    <ul className="space-y-2">
-                        {technicianData.schedule.map((task, index) => (
-                            <li key={index} className="flex items-start">
-                                <span className="text-gray-500 mr-4 mt-1">
-                                    {task.time}
-                                </span>
-                                <p className="text-gray-900 font-medium">
-                                    {task.task}
-                                </p>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-
-            {/* Toast Notification */}
-            {showToast && (
-                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
-                    Status updated successfully!
-                </div>
-            )}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <MapPin className="mr-2 h-5 w-5 text-blue-500" /> Current Job
+          </h3>
+          <p className="text-gray-900 font-medium text-xl">{data.currentJob.customer}</p>
+          <p className="text-gray-600 mb-2">{data.currentJob.address}</p>
+          <p className="text-gray-500 text-sm mb-4">{data.currentJob.description}</p>
+          <div className="flex items-center space-x-2 text-sm text-gray-700">
+            <span className="font-semibold">ETA:</span>
+            <span>{data.currentJob.eta}</span>
+          </div>
         </div>
-    );
+
+        <div className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> Update Job Status
+          </h3>
+          <select id="status-select" defaultValue={data.currentJob.status} className="border rounded px-2 w-full mb-4">
+            <option value="En route">En route</option>
+            <option value="In Progress">In Progress</option>
+            <option value="On hold">On hold</option>
+            <option value="Complete">Complete</option>
+          </select>
+          <button onClick={updateStatus} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Update
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 /* -------------------------
    Retail Associate Dashboard
-   ------------------------- */
+------------------------- */
 const RetailAssociateDashboard = () => {
   const [data, setData] = useState(retailDataInit);
 
-  // Update daily sales and adjust the selected monthly category by the delta
   const updateDailySales = (val) => {
     const prev = Number(data.dailySales || 0);
     const delta = Number(val) - prev;
@@ -407,7 +309,7 @@ const RetailAssociateDashboard = () => {
       ...data,
       dailySales: Number(val),
       monthlySalesByCategory: updatedCategories,
-      customerFeedbackCount: data.customerFeedbackCount + 1, // each sale increments feedback counter (as requested)
+      customerFeedbackCount: data.customerFeedbackCount + 1,
     });
   };
 
@@ -440,49 +342,13 @@ const RetailAssociateDashboard = () => {
         <StatCard title="Upcoming Tasks" value="3" icon={ClipboardList} />
         <StatCard title="Customer Feedback" value={`${data.customerFeedbackCount} new`} icon={MessageCircle} />
       </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <ChartCard title="Daily Sales (Last 5 Days)">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={[
-                { name: "Mon", sales: 1500 },
-                { name: "Tue", sales: 1800 },
-                { name: "Wed", sales: 1650 },
-                { name: "Thu", sales: 2100 },
-                { name: "Fri", sales: 2500 },
-              ]}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="sales" fill="#10b981" name="Sales ($)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Monthly Sales by Category (Last 30 Days)">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart layout="vertical" data={data.monthlySalesByCategory}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="category" type="category" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="sales" fill="#8884d8" name="Sales ($)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
     </div>
   );
 };
 
 /* -------------------------
-   Root App
-   ------------------------- */
+   App Root
+------------------------- */
 const App = () => {
   const [activeDashboard, setActiveDashboard] = useState("operations");
   const renderDashboard = () => {
@@ -521,13 +387,9 @@ const App = () => {
           </div>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{renderDashboard()}</main>
     </div>
   );
 };
 
 export default App;
-
-
-

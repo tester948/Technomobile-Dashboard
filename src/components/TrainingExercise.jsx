@@ -245,120 +245,146 @@ const OperationsDashboard = () => {
    Field Technician Dashboard
    ------------------------- */
 const FieldTechnicianDashboard = () => {
-  const [data, setData] = useState(technicianDataInit);
+    const [currentJob, setCurrentJob] = useState(technicianData.currentJob);
+    const [newStatus, setNewStatus] = useState(currentJob.status);
+    const [completionRate, setCompletionRate] = useState(technicianData.performanceMetrics.completionRate);
+    const [jobsInQueue, setJobsInQueue] = useState(4); // initial value for today’s jobs
+    const [customerSatisfaction, setCustomerSatisfaction] = useState(technicianData.performanceMetrics.customerSatisfaction);
+    const [showToast, setShowToast] = useState(false);
 
-  // Update job status for the technician's current job
-  const updateStatus = (newStatus) => {
-    const prevStatus = data.currentJob.status;
-    let { completionRate, jobsInQueue } = data.performanceMetrics;
-    let { customerSatisfaction } = data.performanceMetrics;
+    const handleStatusUpdate = () => {
+        setCurrentJob({ ...currentJob, status: newStatus });
 
-    // If moving to Complete from a non-Complete state -> adjust jobsInQueue and completionRate
-    if (newStatus === "Complete" && prevStatus !== "Complete") {
-      // Decrement jobs in queue (today) but never below 0
-      jobsInQueue = Math.max(0, jobsInQueue - 1);
+        // If job is marked complete, update KPIs
+        if (newStatus === "Complete") {
+            setJobsInQueue(prev => Math.max(prev - 1, 0)); // reduce jobs in queue
+            setCompletionRate(prev => Math.min(prev + 20, 100)); // increase rate, max 100%
+            setCustomerSatisfaction(prev => Math.min((prev + 0.1).toFixed(1), 5)); // small boost to satisfaction
+        }
 
-      // Increase completion rate by 20% per completed job (cap at 100)
-      completionRate = Math.min(100, completionRate + 20);
+        // Show toast confirmation
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+    };
 
-      // If jobsInQueue equals 5 set completionRate to 0 (per rule)
-      if (jobsInQueue === 5) {
-        completionRate = 0;
-      }
+    return (
+        <div className="p-8 space-y-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+                Hello, {technicianData.name}!
+            </h1>
 
-      // Slightly bump customer satisfaction (rounded)
-      customerSatisfaction = Number((customerSatisfaction + 0.1).toFixed(1));
-    }
-
-    // Update state
-    setData({
-      ...data,
-      currentJob: { ...data.currentJob, status: newStatus },
-      performanceMetrics: {
-        ...data.performanceMetrics,
-        completionRate,
-        jobsInQueue,
-        customerSatisfaction,
-      },
-    });
-  };
-
-  return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Hello, {data.name}!</h1>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Current Job Status" value={data.currentJob.status} icon={Wrench} />
-        <StatCard
-          title="Customer Satisfaction"
-          value={`${Number(data.performanceMetrics.customerSatisfaction).toFixed(1)}/5`}
-          icon={Handshake}
-        />
-        <StatCard title="Job Completion Rate" value={`${data.performanceMetrics.completionRate}%`} icon={CheckCircle} />
-        {/* Jobs in Queue (Today) — non-editable, formal label */}
-        <StatCard title="Jobs in Queue (Today)" value={data.performanceMetrics.jobsInQueue} icon={ClipboardList} />
-      </div>
-
-      {/* Current Job details */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <MapPin className="mr-2 h-5 w-5 text-blue-500" /> Current Job
-          </h3>
-          <p className="text-gray-900 font-medium text-xl">{data.currentJob.customer}</p>
-          <p className="text-gray-600 mb-2">{data.currentJob.address}</p>
-          <p className="text-gray-500 text-sm mb-4">{data.currentJob.description}</p>
-          <div className="flex items-center space-x-2 text-sm text-gray-700">
-            <span className="font-semibold">ETA:</span>
-            <span>{data.currentJob.eta}</span>
-          </div>
-        </div>
-
-        {/* Update Job Status */}
-        <div className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> Update Job Status
-            </h3>
-            <p className="text-gray-500 text-sm mb-4">Update the status for Job ID: {data.currentJob.id}</p>
-            <div className="flex items-center space-x-4">
-              <label htmlFor="status-select" className="sr-only">
-                Choose a status
-              </label>
-              <select
-                id="status-select"
-                value={data.currentJob.status}
-                onChange={(e) => updateStatus(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
-              >
-                <option value="En route">En route</option>
-                <option value="In Progress">In Progress</option>
-                <option value="On hold">On hold</option>
-                <option value="Complete">Complete</option>
-              </select>
+            {/* KPI Cards */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <StatCard
+                    title="Current Job Status"
+                    value={currentJob.status}
+                    icon={Wrench}
+                />
+                <StatCard
+                    title="Customer Satisfaction"
+                    value={`${customerSatisfaction}/5`}
+                    icon={HeartHandshake}
+                />
+                <StatCard
+                    title="Average Job Time"
+                    value={technicianData.performanceMetrics.averageTime}
+                    icon={Calendar}
+                />
+                <StatCard
+                    title="Job Completion Rate"
+                    value={`${completionRate}%`}
+                    icon={CheckCircle}
+                />
+                <StatCard
+                    title="Jobs in Queue (Today)"
+                    value={jobsInQueue}
+                    icon={ClipboardList}
+                />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Schedule */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> My Schedule
-          </h3>
-          <ul className="space-y-2">
-            {data.schedule.map((task, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-gray-500 mr-4 mt-1">{task.time}</span>
-                <p className="text-gray-900 font-medium">{task.task}</p>
-              </li>
-            ))}
-          </ul>
+            <div className="grid lg:grid-cols-2 gap-6">
+                {/* Current Job Info */}
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <MapPin className="mr-2 h-5 w-5 text-blue-500" /> Current Job
+                    </h3>
+                    <p className="text-gray-900 font-medium text-xl">
+                        {currentJob.customer}
+                    </p>
+                    <p className="text-gray-600 mb-2">{currentJob.address}</p>
+                    <p className="text-gray-500 text-sm mb-4">
+                        {currentJob.description}
+                    </p>
+                    <div className="flex items-center space-x-2 text-sm text-gray-700">
+                        <span className="font-semibold">ETA:</span>
+                        <span>{currentJob.eta}</span>
+                    </div>
+                </div>
+
+                {/* Update Job Status */}
+                <div className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> Update Job Status
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-4">
+                            Update the status for Job ID: {currentJob.id}
+                        </p>
+                        <div className="flex items-center space-x-4">
+                            <label htmlFor="status-select" className="sr-only">
+                                Choose a status
+                            </label>
+                            <select
+                                id="status-select"
+                                value={newStatus}
+                                onChange={(e) => setNewStatus(e.target.value)}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+                            >
+                                <option value="En route">En route</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="On hold">On hold</option>
+                                <option value="Complete">Complete</option>
+                            </select>
+                            <button
+                                onClick={handleStatusUpdate}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
+                            >
+                                Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* My Schedule */}
+            <div className="grid lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <ClipboardList className="mr-2 h-5 w-5 text-blue-500" /> My Schedule
+                    </h3>
+                    <ul className="space-y-2">
+                        {technicianData.schedule.map((task, index) => (
+                            <li key={index} className="flex items-start">
+                                <span className="text-gray-500 mr-4 mt-1">
+                                    {task.time}
+                                </span>
+                                <p className="text-gray-900 font-medium">
+                                    {task.task}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+
+            {/* Toast Notification */}
+            {showToast && (
+                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
+                    Status updated successfully!
+                </div>
+            )}
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 /* -------------------------
@@ -501,3 +527,4 @@ const App = () => {
 };
 
 export default App;
+

@@ -512,7 +512,7 @@ const App = () => {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex justify-between items-center h-16">
 						<h1 className="text-xl font-bold text-gray-900">
-							Dashboard Mockup
+							Technomobile Dashboard
 						</h1>
 						<nav className="flex items-center space-x-2">
 							{dashboards.map((d) => (

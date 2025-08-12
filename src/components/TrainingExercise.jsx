@@ -496,7 +496,7 @@ const App = () => {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold text-gray-900">Dashboard Mockup</h1>
+            <h1 className="text-xl font-bold text-gray-900">Technomobile Dashboard</h1>
             <nav className="flex items-center space-x-2">
               {dashboards.map((d) => (
                 <button
@@ -520,6 +520,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
